@@ -1,0 +1,7 @@
+[project]
+name = "provn-win-back-agent"
+version = "0.1.0"
+description = "Cart win-back agent for Seattle SeaWolves fanbase"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
