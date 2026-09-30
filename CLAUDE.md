@@ -20,7 +20,7 @@ Read these before designing or changing behavior (all in `docs/`):
 ## Stack and commands
 
 - Stack: [[architecture#Stack]]. Secrets: `GROQ_API_KEY` in `.env` (see `.env.example`).
-- `uv sync` installs dependencies. `uv run pytest` runs the tests. `uv run ruff check . && uv run ruff format --check .` lints.
+- `uv sync` installs dependencies. `uv run pytest` runs the tests. `uv run ruff check . && uv run ruff format --check .` lints. `uv run python -m winback.rules_engine` prints triage for the sample data.
 
 ## Workflow
 

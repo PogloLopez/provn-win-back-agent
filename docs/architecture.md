@@ -90,6 +90,8 @@ Plain Python rules read from `config/triage_rules.yaml`. The output per cart is:
 
 The Rules Engine also assigns the **segment** (e.g. premium, loyal, first-timer, lapsed) and the **contact stage** (early / mid / late). The segment decides which offers the Strategist is allowed to choose. The contact stage decides the Copywriter's tone (`tone_by_contact_stage` in the persona).
 
+Rule order: all `skip` rules, then `defer`, then caution scoring. Every result carries reason codes (`SKIP_*`, `DEFER_*`, `SIGNAL_*`, `SEGMENT_*`, `STAGE_*`). The Offer Strategist must cite these codes in `reason_codes_cited`.
+
 Expected triage for the sample data, which is also the first golden set in [[#Evaluation]]:
 
 | Cart | Outcome | Why |
@@ -106,7 +108,7 @@ Each value lives in exactly one file ([[decisions]] D-004).
 
 | File | Owns | Read by |
 |---|---|---|
-| `config/triage_rules.yaml` | consent rule, minimum contact delay, contact-stage windows, segment definitions, caution scoring | Rules Engine |
+| `config/triage_rules.yaml` | hard skips (consent, suspected reseller, dormant fan, outside window), minimum contact delay, contact-stage windows, segment definitions, caution scoring | Rules Engine |
 | `config/business_rules.yaml` | per segment: allowed offer types, discount range (%), absolute $ cap. Offer catalogue (e.g. `discount_pct`, `free_parking`, `extra_seat`, `seat_upgrade`, `early_entry`, `reminder_only`) with **margin loss** and **illustrative** conversion rate for each option and level; these numbers are invented and the README says so | Offer Strategist, offer guardrails, UI edit form |
 | `config/models.yaml` | model ID for each role | LLM client |
 
