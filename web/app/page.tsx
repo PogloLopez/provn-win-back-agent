@@ -72,7 +72,7 @@ export default function Home() {
     } catch (error) {
       toast.error(
         error instanceof ApiError && error.status === 429
-          ? "A demo run just started. Please wait a few seconds and try again."
+          ? `The demo is busy: ${error.message}.`
           : `Could not start the demo: ${error}`,
       );
     } finally {

@@ -7,7 +7,7 @@ from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel
-from sqlalchemy import JSON, Column, DateTime
+from sqlalchemy import JSON, Column, DateTime, func
 from sqlalchemy.engine import Engine
 from sqlmodel import Field, Session, SQLModel, select
 
@@ -18,11 +18,10 @@ from winback.copywriter import render_email
 from winback.feedback_analyst import FeedbackAnalysis, FeedbackCategory, Target, analyze
 from winback.guarded import Status
 from winback.guardrails import Violation, blocking, check_copy, check_offer
+from winback.llm import DemoLimits, load_models_config
 from winback.offer_models import Decision, OfferProposal, ProposedOffer
 from winback.pipeline import CartOutcome, CartStatus, Pipeline, _status
-from winback.telemetry import Stage, Telemetry
-
-MIN_SECONDS_BETWEEN_RUNS = 20  # the public demo spends the Groq free tier
+from winback.telemetry import Event, Stage, Telemetry
 
 REJECT_REASONS = {
     "too_generous": FeedbackCategory.OFFER_TOO_GENEROUS,
@@ -62,7 +61,7 @@ class Card(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=_now, sa_column=Column(DateTime(timezone=True)))
 
 
-class TooManyRuns(Exception):
+class DemoLimitReached(Exception):
     pass
 
 
@@ -94,20 +93,33 @@ class FeedbackResult(BaseModel):
 
 
 class ReviewService:
-    def __init__(self, engine: Engine, pipeline_factory: Callable[[Telemetry], Pipeline]):
+    def __init__(
+        self,
+        engine: Engine,
+        pipeline_factory: Callable[[Telemetry], Pipeline],
+        limits: DemoLimits | None = None,
+    ):
         self.engine = engine
         self.pipeline_factory = pipeline_factory
+        self.limits = limits or load_models_config().demo_limits
         self.telemetry_failures: dict[str, int] = {}  # per run, for "telemetry degraded"
         SQLModel.metadata.create_all(engine)
 
     # ---- runs -------------------------------------------------------------------------------
     def start_run(self) -> str:
+        """Start a demo run, within the limits in config/models.yaml (demo_limits)."""
+        limits = self.limits
         with Session(self.engine) as session:
             last = session.exec(select(Run).order_by(Run.created_at.desc())).first()
-            if last and _now() - _aware(last.created_at) < timedelta(
-                seconds=MIN_SECONDS_BETWEEN_RUNS
-            ):
-                raise TooManyRuns(f"wait {MIN_SECONDS_BETWEEN_RUNS}s between demo runs")
+            gap = timedelta(seconds=limits.min_seconds_between_runs)
+            if last and _now() - _aware(last.created_at) < gap:
+                raise DemoLimitReached(f"wait {limits.min_seconds_between_runs}s between demo runs")
+            since = _now() - timedelta(days=1)
+            today = session.exec(select(func.count()).where(Run.created_at >= since)).one()
+            if today >= limits.max_runs_per_day:
+                raise DemoLimitReached(
+                    "the demo reached its limit of runs for the last 24 hours; try again later"
+                )
             run = Run(id=uuid.uuid4().hex[:12])
             session.add(run)
             session.commit()
@@ -270,6 +282,17 @@ class ReviewService:
             raise ActionBlocked(
                 [Violation(code="NOTHING_TO_EDIT", message="no offer on this card")]
             )
+        with Session(self.engine) as session:
+            used = session.exec(
+                select(func.count()).where(
+                    Event.run_id == card.run_id,
+                    Event.cart_id == card.cart_id,
+                    Event.stage == Stage.UI_ACTION,
+                    Event.status.in_(["feedback", "feedback_logged", "feedback_unclassified"]),
+                )
+            ).one()
+        if used >= self.limits.max_feedback_per_card:
+            raise DemoLimitReached("this card reached its feedback limit for the demo")
         cart, result = outcome.cart, outcome.triage
         guarded = analyze(
             cart=cart,
@@ -281,6 +304,7 @@ class ReviewService:
         )
         analysis = guarded.value
         if analysis is None:
+            self._ui_event(pipeline, card, "feedback_unclassified")  # counts toward the cap
             note = "The feedback could not be classified; it was logged for review."
             return FeedbackResult(card=_view(card), analysis=None, routed_to=None, note=note)
 

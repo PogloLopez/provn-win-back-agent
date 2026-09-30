@@ -8,10 +8,10 @@ from tests.test_feedback_analyst import ANALYSIS
 from tests.test_pipeline import CARTS, OFFER_1001
 from winback.business_rules import load_business_rules
 from winback.copywriter import load_persona
-from winback.llm import LLM, load_models_config
+from winback.llm import LLM, DemoLimits, load_models_config
 from winback.offer_models import ProposedOffer
 from winback.pipeline import Pipeline
-from winback.review import ActionBlocked, Review, ReviewService, TooManyRuns
+from winback.review import ActionBlocked, DemoLimitReached, Review, ReviewService
 from winback.rules_engine import load_triage_rules
 from winback.telemetry import Telemetry, make_engine
 
@@ -62,7 +62,7 @@ def test_run_saves_a_card_per_cart(harness):
 def test_runs_are_rate_limited(harness):
     h = harness([])
     h.service.start_run()
-    with pytest.raises(TooManyRuns):
+    with pytest.raises(DemoLimitReached):
         h.service.start_run()
 
 
@@ -142,6 +142,30 @@ def test_feedback_about_rules_is_logged_not_regenerated(harness):
 
 def _perk_body() -> str:
     return "Hi there, we've added {{early_entry}} for you. {{checkout_link}}"
+
+
+def test_daily_run_cap(harness):
+    h = harness([])
+    h.service.limits = DemoLimits(
+        min_seconds_between_runs=0, max_runs_per_day=2, max_feedback_per_card=5
+    )
+    h.service.start_run()
+    h.service.start_run()
+    with pytest.raises(DemoLimitReached, match="24 hours"):
+        h.service.start_run()
+
+
+def test_feedback_cap_per_card(harness):
+    rules_only = ANALYSIS | {"target_component": "business_rules", "instruction": ""}
+    h = harness([OFFER_1001, GOOD_COPY, rules_only])
+    h.service.limits = DemoLimits(
+        min_seconds_between_runs=0, max_runs_per_day=5, max_feedback_per_card=1
+    )
+    _, cards = h.run()
+    h.service.feedback(cards["C-1001"]["id"], "Loyal fans never get discounts")
+    with pytest.raises(DemoLimitReached, match="feedback limit"):
+        h.service.feedback(cards["C-1001"]["id"], "again")
+    assert len(h.client.requests) == 3  # the capped call never reached the LLM
 
 
 def test_edit_resets_review_to_pending(harness):

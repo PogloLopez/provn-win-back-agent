@@ -110,7 +110,7 @@ Each value lives in exactly one file ([[decisions]] D-004).
 |---|---|---|
 | `config/triage_rules.yaml` | hard skips (consent, suspected reseller, dormant fan, outside window), minimum contact delay, contact-stage windows, segment definitions, caution scoring | Rules Engine |
 | `config/business_rules.yaml` | per segment: allowed offer types, discount range (%), max offers, absolute $ cap on the total; tighter cap for CAUTION carts. Offer catalogue (`discount_pct`, `free_parking`, `extra_seat`, `seat_upgrade`, `early_entry`) with **margin loss** and **illustrative** conversion rate for each option and level; these numbers are invented and the README says so | Offer Strategist, offer guardrails, UI edit form |
-| `config/models.yaml` | model, temperature and reasoning effort per role; number of guardrail retries | LLM client, pipeline |
+| `config/models.yaml` | model, temperature and reasoning effort per role; number of guardrail retries; public demo limits (gap between runs, runs per day, feedback per card) | LLM client, pipeline, review service |
 
 ## Offer Strategist
 
@@ -192,14 +192,14 @@ FastAPI (`src/winback/api.py`) over a review service (`src/winback/review.py`) t
 
 | Endpoint | Purpose |
 |---|---|
-| `POST /api/runs` | start a run (429 if the previous one started too recently; the public demo spends the Groq free tier) |
+| `POST /api/runs` | start a run (429 if the previous one started too recently or the daily cap is reached; the public demo spends the Groq free tier) |
 | `GET /api/runs/{id}/stream` | server-sent events: one `card` event per cart as it finishes, then `done` (telemetry failure count) or `run_failed` (reason; not `error`, which EventSource reserves). Each run streams once: 404 unknown, 409 already streamed, so a browser reconnect cannot re-run the LLMs; the UI closes the stream on `done` |
 | `GET /api/runs/{id}/cards` | all cards of a run |
 | `GET /api/cards/{id}/options` | allowed offer values, caps and placeholders for the edit form |
 | `POST /api/cards/{id}/approve` | re-checks every guardrail, then marks it ready to send |
 | `POST /api/cards/{id}/reject` | `{reason}`: one of `too_generous`, `wrong_tone`, `should_not_contact`, `other` |
 | `POST /api/cards/{id}/edit` | `{offers?, subject?, body?}`; guardrail violations come back as 422 with the list |
-| `POST /api/cards/{id}/feedback` | `{text}`: Feedback Analyst classifies and routes it; returns the regenerated card and a note |
+| `POST /api/cards/{id}/feedback` | `{text}`: Feedback Analyst classifies and routes it; returns the regenerated card and a note (429 after the per-card cap) |
 
 ## Models
 

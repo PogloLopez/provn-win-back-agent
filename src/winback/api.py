@@ -16,11 +16,11 @@ from winback.pipeline import Pipeline
 from winback.review import (
     ActionBlocked,
     CardNotFound,
+    DemoLimitReached,
     FeedbackResult,
     ReviewService,
     RunAlreadyStreamed,
     RunNotFound,
-    TooManyRuns,
 )
 from winback.telemetry import make_engine
 
@@ -65,7 +65,7 @@ def create_app(get_service=default_service) -> FastAPI:
     app.exception_handler(CardNotFound)(lambda _, exc: error(404, f"card {exc} not found"))
     app.exception_handler(RunNotFound)(lambda _, exc: error(404, f"run {exc} not found"))
     app.exception_handler(RunAlreadyStreamed)(lambda _, exc: error(409, exc))
-    app.exception_handler(TooManyRuns)(lambda _, exc: error(429, exc))
+    app.exception_handler(DemoLimitReached)(lambda _, exc: error(429, exc))
 
     @app.get("/api/health")
     def health() -> dict:
