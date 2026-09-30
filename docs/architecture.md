@@ -73,7 +73,7 @@ flowchart TD
     class LOG,LOG2 config
 ```
 
-A **run** processes every stale cart in the dataset at that moment, with per-cart LLM calls (no batching) at low concurrency. In the demo, a run starts from the "Start demo" button ([[decisions]] D-005).
+A **run** processes every stale cart in the dataset at that moment, with per-cart LLM calls (no batching) at low concurrency (`src/winback/pipeline.py`). Each cart ends as `skipped`, `deferred`, `ready` (every guardrail passed), `needs_attention` (an escalation; safe defaults in place) or `failed` (an unexpected error, shown with its reason; the rest of the run continues), and outcomes stream out as each cart finishes. In the demo, a run starts from the "Start demo" button ([[decisions]] D-005).
 
 Every step writes a telemetry event (see [[#Telemetry]]). Nothing is dropped silently: skipped, deferred and failed carts all appear in the UI with their reason.
 

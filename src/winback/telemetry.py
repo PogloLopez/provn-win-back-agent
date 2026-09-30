@@ -2,6 +2,7 @@
 
 import logging
 import os
+import threading
 import uuid
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -9,7 +10,7 @@ from typing import Any
 
 from sqlalchemy import JSON, Column, DateTime
 from sqlalchemy.engine import Engine, make_url
-from sqlalchemy.pool import NullPool
+from sqlalchemy.pool import NullPool, StaticPool
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 from winback import settings  # noqa: F401  (loads .env)
@@ -26,6 +27,7 @@ class Stage(StrEnum):
     RENDER = "render"
     UI_ACTION = "ui_action"
     FEEDBACK = "feedback"
+    PIPELINE = "pipeline"  # unexpected per-cart errors
 
 
 class Event(SQLModel, table=True):
@@ -62,8 +64,11 @@ def make_engine(url: str | None = None) -> Engine:
     if url.startswith("postgresql"):
         # Supabase pooler: no server-side prepared statements, no client-side pool.
         engine = create_engine(url, poolclass=NullPool, connect_args={"prepare_threshold": None})
+    elif url == "sqlite://":
+        # In-memory (tests): one shared connection so every thread sees the same tables.
+        engine = create_engine(url, poolclass=StaticPool, connect_args={"check_same_thread": False})
     else:
-        engine = create_engine(url)
+        engine = create_engine(url, connect_args={"check_same_thread": False})
     SQLModel.metadata.create_all(engine)
     return engine
 
@@ -73,18 +78,21 @@ class Telemetry:
         self.engine = engine
         self.run_id = run_id or uuid.uuid4().hex[:12]
         self.failures = 0  # surfaced to the UI as "telemetry degraded"
+        self._lock = threading.Lock()
 
     def record(self, stage: Stage, status: str, **fields: Any) -> None:
         """Write one event. A telemetry failure is logged, never raised into the pipeline."""
-        try:
-            with Session(self.engine) as session:
-                session.add(Event(run_id=self.run_id, stage=stage, status=status, **fields))
-                session.commit()
-        except Exception:
-            self.failures += 1
-            log.exception("telemetry write failed: %s/%s", stage, status)
+        # One writer at a time: pipeline threads share this object (and SQLite one connection).
+        with self._lock:
+            try:
+                with Session(self.engine) as session:
+                    session.add(Event(run_id=self.run_id, stage=stage, status=status, **fields))
+                    session.commit()
+            except Exception:
+                self.failures += 1
+                log.exception("telemetry write failed: %s/%s", stage, status)
 
     def events(self, **filters: Any) -> list[Event]:
-        with Session(self.engine) as session:
+        with self._lock, Session(self.engine) as session:
             query = select(Event).filter_by(run_id=self.run_id, **filters).order_by(Event.id)
             return list(session.exec(query))
