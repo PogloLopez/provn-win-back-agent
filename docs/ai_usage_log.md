@@ -55,3 +55,11 @@ Source for README Section C and the video's mandatory AI question. One entry per
   - copy checked against Offer.json and the persona ([[decisions]] D-023)
   - explicit guardrail boxes, with a second diagram for the after-UI loop
 - **Why:** the diagram is what a product reviewer reads first. It has to show the deterministic stage and both inputs of the LLM at a glance.
+
+## 6. Evaluation design, challenged by the reviewer agent
+
+- **Asked:** the `reviewer` agent to judge whether my baseline comparison was fair.
+- **Got:** "the no-rules baseline is a weak strawman". The suggestion was a second baseline with the rules pasted into the prompt and no code checks.
+- **Result:** with the rules in its prompt, the LLM made no offer violations in 3 of 3 runs, so the code's offer checks showed no measurable gain on this dataset. The live telemetry showed where the code does matter: 34% of email drafts were blocked (typed prices, missing details, broken grammar).
+- **Kept / changed:** reported all three systems and the telemetry, and rewrote the claims ([[decisions]] D-032).
+- **Why:** a comparison built to flatter the design would not survive a skeptical reviewer.

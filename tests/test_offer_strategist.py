@@ -84,7 +84,7 @@ def test_persistent_violations_escalate_with_safe_default():
 def test_groq_outage_escalates_instead_of_crashing(monkeypatch):
     monkeypatch.setattr("tenacity.nap.time.sleep", lambda _: None)
     down = APIConnectionError(request=httpx.Request("POST", "https://x"))
-    result, _, telemetry = run([down] * 12)
+    result, _, telemetry = run([down] * 30)  # 6 transient retries x 3 guarded attempts
     assert result.status is Status.NEEDS_ATTENTION
     assert {e.status for e in telemetry.events()} == {"llm_unavailable", "needs_attention"}
 

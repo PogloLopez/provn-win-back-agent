@@ -112,7 +112,7 @@ class LLM:
     @retry(
         retry=retry_if_exception_type(TRANSIENT_ERRORS),
         wait=wait_exponential(multiplier=2, max=30),
-        stop=stop_after_attempt(4),
+        stop=stop_after_attempt(6),  # ~60 s of backoff: enough for the free tier per-minute cap
         reraise=True,
     )
     def _create(self, **kwargs: Any) -> tuple[Any, int]:

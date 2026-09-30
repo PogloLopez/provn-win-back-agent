@@ -226,7 +226,7 @@ A failed telemetry write is logged and counted, the UI shows "telemetry degraded
 
 - **Golden set (pytest):** the expected triage outcomes above, plus synthetic adversarial carts (e.g. opted-out high value, reseller pattern, first-timer with a huge cart). These cover the hard constraints: C-1003 is never contacted, no offer exceeds its caps, and no raw values appear in copy.
 - **Looks right but is wrong:** a fluent reason that cites facts the cart doesn't have (e.g. "loyal fan" for first-timer C-1002). This is caught by the `reason_codes_cited` check; golden cases assert it.
-- **Baseline run:** one plain LLM call over the same dataset (no Rules Engine, business rules or guardrails). Its offers are scored with the same guardrail checks, and the two runs are compared on violations, cost of the offers made, and carts wrongly contacted.
+- **Baseline runs:** one LLM call over the same dataset, first with no rules, then with both rule files pasted into the prompt (no code checks), to separate what the rules add from what the code adds. Its offers are scored with the same guardrail checks, and the two runs are compared on violations, cost of the offers made, and carts wrongly contacted. Latest results: [[evaluation]] (`src/winback/evaluation.py`, `prompts/baseline.md`).
 - **Online metrics:** guardrail pass rate, retry and `NEEDS_ATTENTION` rate, approve / edit / reject rate, edit magnitude, and rejections by `feedback_category`.
 
 ## Layout (planned)
