@@ -1,0 +1,10 @@
+# Keep the Python bundle small; the web service builds from its own root.
+.venv
+**/__pycache__
+**/node_modules
+web/.next
+tests
+docs
+*.db
+.env
+.env.*

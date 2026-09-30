@@ -22,3 +22,8 @@ node_modules/
 
 # Local notes
 .obsidian/
+
+# Vercel
+.vercel
+.env*
+!.env.example

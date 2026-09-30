@@ -244,5 +244,5 @@ web/                      Next.js marketer UI
 
 - **Python 3.13 with uv:** `groq`, `pydantic`, `pyyaml`, `jinja2`, `tenacity`, `fastapi`, `sqlmodel`, `psycopg`, `pytest`, `ruff`.
 - **Web:** Next.js, shadcn/ui, `motion`.
-- **Deploy:** Vercel (the UI, and FastAPI as a Python function) plus Supabase Postgres. The public demo spends the Groq free tier, so "Start demo" is rate-limited.
+- **Deploy:** one Vercel project with two services (`vercel.json`): `web` (Next.js) and `api` (FastAPI via the root `app.py` shim, which puts `src/` on the path). Public `/api/*` goes to `api`, everything else to `web`. Supabase Postgres holds `events`, `runs` and `cards`. Live at https://provn-win-back-agent.vercel.app. The public demo spends the Groq free tier, so "Start demo" is rate-limited.
 - **Not used:** rules-engine libraries or agent frameworks ([[decisions]] D-017).

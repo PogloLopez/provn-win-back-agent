@@ -21,7 +21,7 @@ Read these before designing or changing behavior (all in `docs/`):
 ## Stack and commands
 
 - Stack: [[architecture#Stack]]. Secrets: `GROQ_API_KEY` in `.env` (see `.env.example`).
-- `uv sync` installs dependencies. `uv run pytest` runs the tests. `uv run ruff check . && uv run ruff format --check .` lints. `uv run python -m winback.rules_engine` prints triage for the sample data. `uv run python -m winback.pipeline` runs the full pipeline live (Groq; telemetry to `DATABASE_URL`). `uv run pytest -m live` runs the live Groq tests. `uv run python -m winback.evaluation --runs 3` regenerates `docs/evaluation.md` (baseline vs pipeline, live). `uv run uvicorn winback.api:app --port 8010 --reload` serves the API (8000 clashes with Docker here); `npm --prefix web run dev` serves the UI on port 3000 and proxies `/api` to it.
+- `uv sync` installs dependencies. `uv run pytest` runs the tests. `uv run ruff check . && uv run ruff format --check .` lints. `uv run python -m winback.rules_engine` prints triage for the sample data. `uv run python -m winback.pipeline` runs the full pipeline live (Groq; telemetry to `DATABASE_URL`). `uv run pytest -m live` runs the live Groq tests. `uv run python -m winback.evaluation --runs 3` regenerates `docs/evaluation.md` (baseline vs pipeline, live). `uv run uvicorn winback.api:app --port 8010 --reload` serves the API (8000 clashes with Docker here); `npm --prefix web run dev` serves the UI on port 3000 and proxies `/api` to it. `npx vercel deploy --prod` deploys both services (secrets live in the Vercel project env).
 
 ## Workflow
 
