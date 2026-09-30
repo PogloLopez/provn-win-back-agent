@@ -148,6 +148,7 @@ All checks are deterministic, and each one returns a list of violations.
 - no raw digits, `%` or `$` outside placeholders
 - no `banned_terms` from the persona and no emojis
 - no scarcity or deadline claims (`scarcity_terms` in the persona)
+- where each placeholder meets its neighbours once rendered: no doubled word ("free free matchday parking") and no article or quantity word before a number ("a 10% off", "a couple of 2 seats"). A draft can pass every template rule and still read wrong once filled in ([[decisions]] D-031)
 - no mention of an offer that was not granted (each offer's `keywords` in the business rules), which catches an email promising "free parking" in plain words
 
 **Failure policy:**

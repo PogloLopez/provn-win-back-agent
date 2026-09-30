@@ -21,7 +21,7 @@ Write in the voice defined by this persona (JSON):
 - Use only placeholders from `placeholders_render_as`, and every one of `required_placeholders`, exactly as written.
 - Mention only the offers listed. Never promise anything else (no discounts, parking, upgrades or seats unless listed).
 - Write around what each placeholder renders to, so the final sentence reads naturally:
-  "we've added {{free_parking}}" becomes "we've added a free parking pass for matchday".
+  "we've added {{free_parking}}" becomes "we've added free matchday parking".
 - No scarcity or deadline claims, no emojis, no American football terms.
 - There is no fan name: open with a warm, generic greeting.
 - Keep it short: subject under 60 characters, body of 60 to 120 words, one clear call to action.

@@ -119,7 +119,11 @@ class ReviewService:
         if outcome.offer and outcome.email:
             problems = blocking(
                 check_copy(
-                    outcome.email.draft, outcome.offer.proposal, pipeline.persona, pipeline.rules
+                    outcome.email.draft,
+                    outcome.offer.proposal,
+                    pipeline.persona,
+                    pipeline.rules,
+                    placeholders.values(outcome.cart, outcome.offer.proposal, pipeline.rules),
                 )
             )
             if outcome.offer.status is Status.OK:
@@ -186,7 +190,10 @@ class ReviewService:
             body=body if body is not None else old_draft.body,
         )
         text_changed = draft != old_draft
-        copy_violations = blocking(check_copy(draft, proposal, pipeline.persona, pipeline.rules))
+        values = placeholders.values(cart, proposal, pipeline.rules)
+        copy_violations = blocking(
+            check_copy(draft, proposal, pipeline.persona, pipeline.rules, values)
+        )
         if copy_violations and (text_changed or not offer_changed):
             raise ActionBlocked(copy_violations)
         if copy_violations:

@@ -15,6 +15,10 @@ from winback.rules_engine import TriageResult
 MIN_REASON_CHARS = 20
 MAX_SUBJECT_CHARS = 70  # prompt asks for < 60; warn with some slack
 MAX_BODY_WORDS = 150  # prompt asks for 60-120
+WORD_BEFORE = re.compile(r"([A-Za-z']+)[ \t]+$")
+WORD_AFTER = re.compile(r"^[ \t]+([A-Za-z']+)")
+# Words that cannot precede a value starting with a number: "a 10% off", "a couple of 2 seats".
+BEFORE_NUMBER = re.compile(r"\b(?:a|an|couple of|a few|pair of|several|some)[ \t]+$", re.IGNORECASE)
 RAW_VALUE = re.compile(r"[0-9$%]")
 EMOJI = re.compile(r"[\U0001F000-\U0001FAFF☀-➿⬀-⯿️]")
 
@@ -113,9 +117,17 @@ def blocking(violations: list[Violation]) -> list[Violation]:
 
 
 def check_copy(
-    draft: EmailDraft, proposal: OfferProposal, persona: dict, rules: BusinessRules
+    draft: EmailDraft,
+    proposal: OfferProposal,
+    persona: dict,
+    rules: BusinessRules,
+    values: dict[str, str] | None = None,
 ) -> list[Violation]:
-    """The draft may only reference what the offer granted, in the persona's voice rules."""
+    """The draft may only reference what the offer granted, in the persona's voice rules.
+
+    With `values`, the rendered text is checked too: a draft can pass every template rule and
+    still read wrong once filled in ("plus a a free parking pass", "a couple of 2 seats").
+    """
     out: list[Violation] = []
 
     def block(code: str, message: str) -> None:
@@ -130,8 +142,14 @@ def check_copy(
         block("MISSING_PLACEHOLDER", f"must include: {[f'{{{{{m}}}}}' for m in sorted(missing)]}")
 
     stripped = placeholders.PLACEHOLDER.sub("", text)
-    if raw := sorted(set(RAW_VALUE.findall(stripped))):
-        block("RAW_VALUE", f"write numbers, $ and % only through placeholders (found {raw})")
+    if raw := list(RAW_VALUE.finditer(stripped)):
+        # Quote where it happened: the model fixes a pinpointed snippet far more reliably.
+        snippets = sorted({stripped[max(0, m.start() - 20) : m.end() + 20].strip() for m in raw})
+        block(
+            "RAW_VALUE",
+            "write numbers, $ and % only through placeholders; replace them in: "
+            + " | ".join(f'"{s}"' for s in snippets[:3]),
+        )
     if "{" in stripped or "}" in stripped:
         block("MALFORMED_PLACEHOLDER", "placeholders must look like {{name}}")
     if not draft.subject.strip() or not draft.body.strip():
@@ -152,6 +170,9 @@ def check_copy(
         if name not in granted and (hits := [k for k in offer.keywords if k in lowered]):
             block("UNGRANTED_OFFER", f"mentions {name} ({hits}) but it was not offered")
 
+    if values is not None:
+        out.extend(_render_seams(text, values))
+
     words = len(draft.body.split())
     if len(draft.subject) > MAX_SUBJECT_CHARS or words > MAX_BODY_WORDS:
         out.append(
@@ -161,4 +182,31 @@ def check_copy(
                 severity=Severity.WARN,
             )
         )
+    return out
+
+
+def _render_seams(text: str, values: dict[str, str]) -> list[Violation]:
+    """Check only where a placeholder meets the words around it, so normal English passes."""
+    out = []
+    for match in placeholders.PLACEHOLDER.finditer(text):
+        value = values.get(match[1], "").strip()
+        if not value:
+            continue
+        head, tail = text[: match.start()], text[match.end() :]
+        first, last = value.split()[0].lower(), value.split()[-1].lower()
+        before, after = WORD_BEFORE.search(head), WORD_AFTER.search(tail)
+        if (before and before[1].lower() == first) or (after and after[1].lower() == last):
+            out.append(
+                Violation(
+                    code="DOUBLED_WORD",
+                    message=f'"{match[0]}" renders "{value}": a word is repeated next to it',
+                )
+            )
+        if value[0].isdigit() and (quantity := BEFORE_NUMBER.search(head)):
+            out.append(
+                Violation(
+                    code="WORD_BEFORE_NUMBER",
+                    message=f'"{quantity[0].strip()} {match[0]}" renders "{quantity[0]}{value}"',
+                )
+            )
     return out
