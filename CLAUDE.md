@@ -7,6 +7,7 @@ Read these before designing or changing behavior (all in `docs/`):
 - [[architecture]]: pipeline, contracts, guardrails, telemetry, evaluation
 - [[decisions]]: why things are the way they are. Add a row whenever you make or change a decision.
 - [[ai_usage_log]]: add an entry whenever the user redirects or rejects AI output
+- [[plan]]: build order and status. Update the status column in each PR
 
 ## Principles
 
