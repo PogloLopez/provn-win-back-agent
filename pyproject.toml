@@ -5,8 +5,13 @@ description = "Cart win-back agent for the Seattle Seawolves fanbase"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "groq>=1.7.0",
+    "psycopg[binary]>=3.3.6",
     "pydantic>=2.13.5",
+    "python-dotenv>=1.2.3",
     "pyyaml>=6.0.3",
+    "sqlmodel>=0.0.47",
+    "tenacity>=9.1.4",
 ]
 
 [build-system]
