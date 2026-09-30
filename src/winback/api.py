@@ -10,6 +10,7 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
+from winback.carts import load_carts
 from winback.offer_models import ProposedOffer
 from winback.pipeline import Pipeline
 from winback.review import (
@@ -72,7 +73,7 @@ def create_app(get_service=default_service) -> FastAPI:
 
     @app.post("/api/runs", status_code=201)
     def start_run(svc: ReviewService = service) -> dict:
-        return {"run_id": svc.start_run()}
+        return {"run_id": svc.start_run(), "total": len(load_carts())}
 
     @app.get("/api/runs/{run_id}/stream")
     def stream(run_id: str, svc: ReviewService = service) -> StreamingResponse:
@@ -89,7 +90,7 @@ def create_app(get_service=default_service) -> FastAPI:
                     yield _sse("card", card)
             except Exception as exc:
                 log.exception("run %s failed mid-stream", run_id)
-                yield _sse("error", {"detail": f"run stopped: {exc!r}"[:500]})
+                yield _sse("run_failed", {"detail": f"run stopped: {exc!r}"[:500]})
                 return
             yield _sse("done", {"telemetry_failures": svc.telemetry_failures.get(run_id, 0)})
 

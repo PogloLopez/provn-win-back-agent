@@ -193,7 +193,7 @@ FastAPI (`src/winback/api.py`) over a review service (`src/winback/review.py`) t
 | Endpoint | Purpose |
 |---|---|
 | `POST /api/runs` | start a run (429 if the previous one started too recently; the public demo spends the Groq free tier) |
-| `GET /api/runs/{id}/stream` | server-sent events: one `card` event per cart as it finishes, then `done` (telemetry failure count) or `error` (reason). Each run streams once: 404 unknown, 409 already streamed, so a browser reconnect cannot re-run the LLMs; the UI closes the stream on `done` |
+| `GET /api/runs/{id}/stream` | server-sent events: one `card` event per cart as it finishes, then `done` (telemetry failure count) or `run_failed` (reason; not `error`, which EventSource reserves). Each run streams once: 404 unknown, 409 already streamed, so a browser reconnect cannot re-run the LLMs; the UI closes the stream on `done` |
 | `GET /api/runs/{id}/cards` | all cards of a run |
 | `GET /api/cards/{id}/options` | allowed offer values, caps and placeholders for the edit form |
 | `POST /api/cards/{id}/approve` | re-checks every guardrail, then marks it ready to send |

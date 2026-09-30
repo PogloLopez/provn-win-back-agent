@@ -65,7 +65,10 @@ def test_actions(api):
     client, _ = api([OFFER_1001, GOOD_COPY])
     _, cards = start(client)
     card_id = cards["C-1001"]["id"]
-    assert client.get(f"/api/cards/{card_id}/options").json()["total_cost_cap_usd"] == 30
+    options = client.get(f"/api/cards/{card_id}/options").json()
+    assert options["total_cost_cap_usd"] == 30
+    assert options["values"]["seats"] == "2 seats"
+    assert options["phrases"]["discount_pct"]["15"] == "15% off your order"
     assert client.post(f"/api/cards/{card_id}/approve").json()["review"] == "approved"
     rejected = client.post(f"/api/cards/{card_id}/reject", json={"reason": "wrong_tone"})
     assert rejected.json()["reject_reason"] == "wrong_tone"
@@ -116,7 +119,7 @@ def test_mid_stream_failure_is_reported_as_an_event(api, monkeypatch):
     monkeypatch.setattr(harness.service, "stream_run", broken)
     run_id = client.post("/api/runs").json()["run_id"]
     events = sse_events(client.get(f"/api/runs/{run_id}/stream").text)
-    assert events[-1][0] == "error"
+    assert events[-1][0] == "run_failed"
     assert "database went away" in events[-1][1]["detail"]
 
 
