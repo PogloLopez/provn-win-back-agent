@@ -110,7 +110,7 @@ Each value lives in exactly one file ([[decisions]] D-004).
 |---|---|---|
 | `config/triage_rules.yaml` | hard skips (consent, suspected reseller, dormant fan, outside window), minimum contact delay, contact-stage windows, segment definitions, caution scoring | Rules Engine |
 | `config/business_rules.yaml` | per segment: allowed offer types, discount range (%), max offers, absolute $ cap on the total; tighter cap for CAUTION carts. Offer catalogue (`discount_pct`, `free_parking`, `extra_seat`, `seat_upgrade`, `early_entry`) with **margin loss** and **illustrative** conversion rate for each option and level; these numbers are invented and the README says so | Offer Strategist, offer guardrails, UI edit form |
-| `config/models.yaml` | model ID for each role | LLM client |
+| `config/models.yaml` | model, temperature and reasoning effort per role; number of guardrail retries | LLM client, pipeline |
 
 ## Offer Strategist
 
