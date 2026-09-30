@@ -8,3 +8,17 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Secrets
+.env
+
+# Runtime artifacts
+*.db
+*.sqlite
+
+# Frontend
+node_modules/
+.next/
+
+# Local notes
+.obsidian/
