@@ -26,6 +26,8 @@ class Level(Strict):
 
 class OfferType(Strict):
     description: str
+    phrase: str
+    keywords: list[str]
     unit: Unit
     levels: list[Level] = Field(min_length=1)
 

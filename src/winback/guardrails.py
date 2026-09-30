@@ -1,15 +1,22 @@
 """Deterministic guardrails. Each check returns violations; BLOCK ones trigger a retry."""
 
+import re
 from enum import StrEnum
 
 from pydantic import BaseModel
 
+from winback import placeholders
 from winback.business_rules import BusinessRules, Unit
 from winback.carts import Cart
+from winback.copy_models import EmailDraft
 from winback.offer_models import Decision, OfferProposal
 from winback.rules_engine import TriageResult
 
 MIN_REASON_CHARS = 20
+MAX_SUBJECT_CHARS = 70  # prompt asks for < 60; warn with some slack
+MAX_BODY_WORDS = 150  # prompt asks for 60-120
+RAW_VALUE = re.compile(r"[0-9$%]")
+EMOJI = re.compile(r"[\U0001F000-\U0001FAFF☀-➿⬀-⯿️]")
 
 
 class Severity(StrEnum):
@@ -94,3 +101,55 @@ def check_offer(
 
 def blocking(violations: list[Violation]) -> list[Violation]:
     return [v for v in violations if v.severity is Severity.BLOCK]
+
+
+def check_copy(
+    draft: EmailDraft, proposal: OfferProposal, persona: dict, rules: BusinessRules
+) -> list[Violation]:
+    """The draft may only reference what the offer granted, in the persona's voice rules."""
+    out: list[Violation] = []
+
+    def block(code: str, message: str) -> None:
+        out.append(Violation(code=code, message=message))
+
+    text = f"{draft.subject}\n{draft.body}"
+    lowered = text.lower()
+    used = placeholders.used(text)
+    if extra := used - placeholders.allowed(proposal):
+        block("UNKNOWN_PLACEHOLDER", f"not granted by the offer: {sorted(extra)}")
+    if missing := placeholders.required(proposal) - used:
+        block("MISSING_PLACEHOLDER", f"must include: {[f'{{{{{m}}}}}' for m in sorted(missing)]}")
+
+    stripped = placeholders.PLACEHOLDER.sub("", text)
+    if raw := sorted(set(RAW_VALUE.findall(stripped))):
+        block("RAW_VALUE", f"write numbers, $ and % only through placeholders (found {raw})")
+    if "{" in stripped or "}" in stripped:
+        block("MALFORMED_PLACEHOLDER", "placeholders must look like {{name}}")
+    if not draft.subject.strip() or not draft.body.strip():
+        block("EMPTY_COPY", "subject and body are required")
+
+    lexicon = persona["rugby_lexicon"]
+    if banned := [t for t in lexicon["banned_terms"] if re.search(rf"\b{re.escape(t)}\b", lowered)]:
+        block("BANNED_TERM", f"off-brand terms: {banned}")
+    # Scarcity and offer keywords match substrings on purpose ("upgraded" still hints at an
+    # upgrade): a false positive costs one retry, a false negative reaches a fan.
+    if scarcity := [t for t in lexicon["scarcity_terms"] if t in lowered]:
+        block("SCARCITY_CLAIM", f"no scarcity or deadline claims: {scarcity}")
+    if EMOJI.search(text):
+        block("EMOJI", "no emojis")
+
+    granted = {o.type for o in proposal.offers}
+    for name, offer in rules.offers.items():
+        if name not in granted and (hits := [k for k in offer.keywords if k in lowered]):
+            block("UNGRANTED_OFFER", f"mentions {name} ({hits}) but it was not offered")
+
+    words = len(draft.body.split())
+    if len(draft.subject) > MAX_SUBJECT_CHARS or words > MAX_BODY_WORDS:
+        out.append(
+            Violation(
+                code="TOO_LONG",
+                message=f"subject {len(draft.subject)} chars, body {words} words",
+                severity=Severity.WARN,
+            )
+        )
+    return out

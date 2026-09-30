@@ -37,6 +37,21 @@
       "e-commerce customer",
       "sales funnel",
       "item left behind"
+    ],
+    "scarcity_terms": [
+      "selling out",
+      "sell out",
+      "sold out",
+      "last chance",
+      "only a few",
+      "few seats left",
+      "running out",
+      "hurry",
+      "limited time",
+      "expires",
+      "deadline",
+      "today only",
+      "before it's gone"
     ]
   },
   "communication_guardrails": {

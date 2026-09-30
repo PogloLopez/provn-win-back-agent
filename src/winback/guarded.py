@@ -51,7 +51,6 @@ def guarded_call[T: BaseModel](
     for attempt in range(1, llm.config.guardrail_retries + 2):
         try:
             value, raw, usage = llm.structured(role, messages, schema)
-            violations = check(value)
             telemetry.record(
                 llm_stage,
                 "ok",
@@ -60,6 +59,7 @@ def guarded_call[T: BaseModel](
                 payload=value.model_dump(mode="json"),
                 **usage.telemetry_fields(),
             )
+            violations = check(value)
         except (LLMOutputError, groq.APIError) as exc:
             # Off-schema reply, or Groq still failing after transient retries.
             code = "BAD_JSON" if isinstance(exc, LLMOutputError) else "LLM_UNAVAILABLE"
