@@ -181,7 +181,7 @@ A minimal Next.js app built with shadcn/ui components; animations use `motion`.
 | Edit | An overlay covers about 75% of the detail box. Values are form controls bounded by the business rules. The text is a plain-textarea template, with a live preview that shows values as highlighted chips. Saved text is re-checked by the copy guardrails |
 | Feedback | A pop-up with a text box. On send, a spinner shows while the Feedback Analyst routes the feedback and the target agent regenerates. The new result (offer or email) replaces the old one, with the changes highlighted |
 
-**Feedback Analyst output:** `feedback_category` (offer_too_generous, offer_too_weak, wrong_offer_type, tone_off, factual_error, off_brand, should_not_contact, other), `target_component` (triage, business_rules, offer_strategist, copywriter, persona), `severity`, `suggested_change`. Only `offer_strategist` and `copywriter` are routed automatically; the other targets are logged for a human to act on.
+**Feedback Analyst output:** `feedback_category` (offer_too_generous, offer_too_weak, wrong_offer_type, tone_off, factual_error, off_brand, should_not_contact, other), `target_component` (triage, business_rules, offer_strategist, copywriter, persona), `severity` (low, medium, high), `summary`, and `instruction` (the concrete change for the target agent). Only `offer_strategist` and `copywriter` are routed automatically, and the instruction is passed to that agent as feedback; the other targets are logged for a human to act on. The prompt is `prompts/feedback_analyst.md`.
 
 For edits to structured values, the diff is computed in code (e.g. 20% → 15% means `offer_too_generous`). Only text edits go to the Feedback Analyst.
 
