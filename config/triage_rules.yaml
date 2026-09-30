@@ -1,0 +1,56 @@
+# Rules Engine (triage): who gets contacted, and how.
+# Every `when` ANDs its fields. Available fields:
+#   email_opt_in, never_purchased (bool)
+#   min_/max_ (inclusive) + seats, cart_value, hours_since_abandon,
+#                           lifetime_tickets, days_since_last_purchase
+# A `when` with a range field never matches a cart where that value is missing.
+
+skip:  # hard stops, checked first; these carts never reach an LLM
+  - code: SKIP_NO_OPT_IN
+    when: {email_opt_in: false}
+  - code: SKIP_SUSPECTED_RESELLER  # proxy until resale data exists
+    when: {min_seats: 10}
+  - code: SKIP_DORMANT  # one-off fan, gone for 2+ years
+    when: {max_lifetime_tickets: 1, min_days_since_last_purchase: 730}
+  - code: SKIP_OUTSIDE_WINDOW  # 7 days or more (the dataset window)
+    when: {min_hours_since_abandon: 168}
+
+defer:  # not yet; re-checked on the next run
+  - code: DEFER_TOO_RECENT
+    when: {max_hours_since_abandon: 2}
+
+caution:  # soft risk signals; score >= threshold flags the cart for careful handling
+  threshold: 2
+  signals:
+    - code: SIGNAL_OLD_CART
+      weight: 1
+      when: {min_hours_since_abandon: 72}
+    - code: SIGNAL_LAPSED
+      weight: 1
+      when: {min_days_since_last_purchase: 181}
+    - code: SIGNAL_LOW_ENGAGEMENT
+      weight: 1
+      when: {min_lifetime_tickets: 1, max_lifetime_tickets: 1}
+    - code: SIGNAL_LARGE_FIRST_CART
+      weight: 2
+      when: {never_purchased: true, min_cart_value: 400}
+
+segments:  # first match wins; the last entry must be a catch-all
+  - name: premium
+    when: {min_lifetime_tickets: 20}
+  - name: first_timer
+    when: {never_purchased: true}
+  - name: lapsed
+    when: {min_days_since_last_purchase: 181}
+  - name: loyal
+    when: {min_lifetime_tickets: 5}
+  - name: regular
+    when: {}
+
+contact_stages:  # first match wins; drives the Copywriter's tone. Last entry is a catch-all
+  - name: early
+    when: {max_hours_since_abandon: 12}
+  - name: mid
+    when: {max_hours_since_abandon: 48}
+  - name: late
+    when: {}

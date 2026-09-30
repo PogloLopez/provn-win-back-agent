@@ -27,3 +27,4 @@ One line per decision: what was chosen, why, and what was rejected. The design i
 | D-021 | The email preview is shown before approval; rejection takes a one-click reason | The marketer never approves unseen wording; rejections become explainable telemetry | Email only after approval; reject with no reason |
 | D-022 | Deploy on Vercel plus Supabase | One platform for the UI and API; Postgres persists telemetry | Render (cold starts), SQLite on serverless (temporary storage) |
 | D-023 | Copy guardrails check against Offer.json and the persona, not the rules | The draft holds placeholders, not values; the values were already checked at the offer step | Re-checking the draft against business rules and the Rules Engine |
+| D-024 | `SKIP_SUSPECTED_RESELLER` and `SKIP_DORMANT` use proxies (seat count; lifetime tickets plus time since purchase) | The dataset has no resale or attendance history | Leaving them out; inventing columns |
