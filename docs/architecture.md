@@ -196,9 +196,11 @@ The static prompt content always comes first so that provider-side prompt cachin
 
 ## Telemetry
 
-A single `events` table, written with SQLModel: Postgres on Supabase when deployed and SQLite locally, selected by `DATABASE_URL`. Columns: `run_id, cart_id, stage, status, reason_codes, payload_json, model, tokens_in, tokens_out, cached_tokens, latency_ms, attempt, created_at`.
+A single `events` table, written with SQLModel: Postgres on Supabase when deployed and SQLite locally, selected by `DATABASE_URL`. Columns: `run_id, cart_id, stage, status, reason_codes, payload, model, tokens_in, tokens_out, cached_tokens, latency_ms, attempt, created_at`.
 
 Stages: `triage`, `offer`, `offer_guardrail`, `copy`, `copy_guardrail`, `render`, `ui_action`, `feedback`.
+
+A failed telemetry write is logged and counted, the UI shows "telemetry degraded", and it never stops a fan's offer from being processed ([[decisions]] D-026). Supabase connection strings are accepted as copied (the driver and pooler options are normalized in code).
 
 ## Evaluation
 
