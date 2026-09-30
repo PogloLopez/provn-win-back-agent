@@ -31,9 +31,18 @@ class Violation(BaseModel):
 
 
 def check_offer(
-    proposal: OfferProposal, cart: Cart, triage: TriageResult, rules: BusinessRules
+    proposal: OfferProposal,
+    cart: Cart,
+    triage: TriageResult,
+    rules: BusinessRules,
+    *,
+    check_reason: bool = True,
 ) -> list[Violation]:
-    """Every rule the offer must satisfy, checked against the config and the triage result."""
+    """Every rule the offer must satisfy, checked against the config and the triage result.
+
+    `check_reason=False` for marketer edits: the reason checks judge the AI's explanation,
+    while every value rule still applies.
+    """
     out: list[Violation] = []
 
     def block(code: str, message: str) -> None:
@@ -76,12 +85,12 @@ def check_offer(
     if total_cost > cap:
         block("OVER_COST_CAP", f"total cost ${total_cost:.2f} exceeds cap ${cap:.2f}")
 
-    if len(proposal.reason.strip()) < MIN_REASON_CHARS:
-        block("NO_REASON", "reason must explain the decision")
     cited = set(proposal.reason_codes_cited)
-    if not cited:
+    if check_reason and len(proposal.reason.strip()) < MIN_REASON_CHARS:
+        block("NO_REASON", "reason must explain the decision")
+    if check_reason and not cited:
         block("UNGROUNDED_REASON", "cite at least one triage reason code")
-    elif unknown := cited - set(triage.reason_codes):
+    elif check_reason and (unknown := cited - set(triage.reason_codes)):
         block("UNGROUNDED_REASON", f"codes not in triage: {sorted(unknown)}")
 
     if not 0 <= proposal.confidence <= 1:
