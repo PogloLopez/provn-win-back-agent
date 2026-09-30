@@ -23,9 +23,16 @@ class RoleConfig(Strict):
     reasoning_effort: Literal["low", "medium", "high"]
 
 
+class DemoLimits(Strict):
+    min_seconds_between_runs: int = Field(ge=0)
+    max_runs_per_day: int = Field(ge=1)
+    max_feedback_per_card: int = Field(ge=1)
+
+
 class ModelsConfig(Strict):
     roles: dict[str, RoleConfig]
     guardrail_retries: int = Field(ge=0)
+    demo_limits: DemoLimits
 
 
 def load_models_config(path: Path = DEFAULT_MODELS_PATH) -> ModelsConfig:
