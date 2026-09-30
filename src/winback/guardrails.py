@@ -19,7 +19,7 @@ WORD_BEFORE = re.compile(r"([A-Za-z']+)[ \t]+$")
 WORD_AFTER = re.compile(r"^[ \t]+([A-Za-z']+)")
 # Words that cannot precede a value starting with a number: "a 10% off", "a couple of 2 seats".
 BEFORE_NUMBER = re.compile(r"\b(?:a|an|couple of|a few|pair of|several|some)[ \t]+$", re.IGNORECASE)
-RAW_VALUE = re.compile(r"[0-9$%]")
+RAW_VALUE = re.compile(r"[0-9$%][0-9$%.,]*")  # one match per typed value, e.g. "$9.60"
 EMOJI = re.compile(r"[\U0001F000-\U0001FAFF☀-➿⬀-⯿️]")
 
 
