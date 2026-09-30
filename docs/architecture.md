@@ -179,8 +179,8 @@ A minimal Next.js app built with shadcn/ui components; animations use `motion`.
 |---|---|
 | Approve | Status "Ready to send". The email is shown with a Copy button (there is no CRM) |
 | Reject | One-click reason chips that map to `feedback_category` (Too generous → `offer_too_generous`, Wrong tone → `tone_off`, Shouldn't contact → `should_not_contact`, Other → `other`), then the item drops into a trash can |
-| Edit | An overlay covers about 75% of the detail box. Values are form controls bounded by the business rules. The text is a plain-textarea template, with a live preview that shows values as highlighted chips. Saved text is re-checked by the copy guardrails |
-| Feedback | A pop-up with a text box. On send, a spinner shows while the Feedback Analyst routes the feedback and the target agent regenerates. The new result (offer or email) replaces the old one, with the changes highlighted |
+| Edit | A large overlay (80% of the screen). Values are form controls bounded by the business rules. The text is a plain-textarea template, with a live preview that shows values as highlighted chips. Saved text is re-checked by the copy guardrails |
+| Feedback | A pop-up with a text box. On send, a spinner shows while the Feedback Analyst routes the feedback and the target agent regenerates. The new result (offer or email) replaces the old one, and the parts that changed are marked "Updated by the AI" |
 
 **Feedback Analyst output:** `feedback_category` (offer_too_generous, offer_too_weak, wrong_offer_type, tone_off, factual_error, off_brand, should_not_contact, other), `target_component` (triage, business_rules, offer_strategist, copywriter, persona), `severity` (low, medium, high), `summary`, and `instruction` (the concrete change for the target agent). Only `offer_strategist` and `copywriter` are routed automatically, and the instruction is passed to that agent as feedback; the other targets are logged for a human to act on. The prompt is `prompts/feedback_analyst.md`.
 

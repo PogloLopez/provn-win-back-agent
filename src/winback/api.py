@@ -1,4 +1,4 @@
-"""HTTP API for the marketer UI. Run locally: uv run uvicorn winback.api:app --reload"""
+"""HTTP API for the marketer UI. Run locally: uv run uvicorn winback.api:app --port 8010 --reload"""
 
 import json
 import logging
