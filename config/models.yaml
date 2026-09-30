@@ -1,0 +1,14 @@
+# LLM role settings (Groq). Swap models here only.
+roles:
+  offer_strategist: {model: openai/gpt-oss-120b, temperature: 0.3, reasoning_effort: medium}
+  copywriter: {model: openai/gpt-oss-20b, temperature: 0.7, reasoning_effort: low}
+  feedback_analyst: {model: openai/gpt-oss-20b, temperature: 0.0, reasoning_effort: low}
+  baseline: {model: openai/gpt-oss-120b, temperature: 0.3, reasoning_effort: medium}
+
+guardrail_retries: 2  # re-prompts with violations before NEEDS_ATTENTION
+
+# Public demo limits: every run and regeneration spends the Groq free tier.
+demo_limits:
+  min_seconds_between_runs: 20
+  max_runs_per_day: 40
+  max_feedback_per_card: 5

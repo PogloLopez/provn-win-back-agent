@@ -19,12 +19,12 @@ Your product team wants a first agentic feature: a cart win-back agent. Every da
 You've been given a small sample dataset representing stale carts from the last 7 days. Build a first version of this feature.
 
 | Cart ID | Fan ID | Seats | Section | Cart Value | Abandoned | Lifetime Tickets | Last Purchase | Email Opt-In |
- | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- |
-| C-1001 | F-2042 | | Lower Bowl | \$96 | 3 hrs ago | 14 | 21 days ago | Yes |
-| C-1002 | F-5114 | | Upper Deck | \$140 | 26 hrs ago | 0 | Never | Yes |
-| C-1003 | F-0921 | | Lower Bowl | \$58 | 70 hrs ago | 3 | 180 days ago | No |
-| C-1004 | F-3336 | | Club | \$540 | 1 hr ago | 40 | 9 days ago | Yes |
-| C-1005 | F-7772 | | Upper Deck | \$70 | 96 hrs ago | 1 | 300 days ago | Yes |
+| ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- |
+| C-1001 | F-204 | 2 | Lower Bowl | \$96 | 3 hrs ago | 14 | 21 days ago | Yes |
+| C-1002 | F-511 | 4 | Upper Deck | \$140 | 26 hrs ago | 0 | Never | Yes |
+| C-1003 | F-092 | 1 | Lower Bowl | \$58 | 70 hrs ago | 3 | 180 days ago | No |
+| C-1004 | F-333 | 6 | Club | \$540 | 1 hr ago | 40 | 9 days ago | Yes |
+| C-1005 | F-777 | 2 | Upper Deck | \$70 | 96 hrs ago | 1 | 300 days ago | Yes |
 
 ## What to build
 
