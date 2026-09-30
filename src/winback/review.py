@@ -47,6 +47,7 @@ class Run(SQLModel, table=True):
 
     id: str = Field(primary_key=True)
     created_at: datetime = Field(default_factory=_now, sa_column=Column(DateTime(timezone=True)))
+    streamed: bool = False  # a run is processed once; reconnects must not re-run the LLMs
 
 
 class Card(SQLModel, table=True):
@@ -62,6 +63,18 @@ class Card(SQLModel, table=True):
 
 
 class TooManyRuns(Exception):
+    pass
+
+
+class CardNotFound(Exception):
+    pass
+
+
+class RunNotFound(Exception):
+    pass
+
+
+class RunAlreadyStreamed(Exception):
     pass
 
 
@@ -84,6 +97,7 @@ class ReviewService:
     def __init__(self, engine: Engine, pipeline_factory: Callable[[Telemetry], Pipeline]):
         self.engine = engine
         self.pipeline_factory = pipeline_factory
+        self.telemetry_failures: dict[str, int] = {}  # per run, for "telemetry degraded"
         SQLModel.metadata.create_all(engine)
 
     # ---- runs -------------------------------------------------------------------------------
@@ -99,11 +113,27 @@ class ReviewService:
             session.commit()
             return run.id
 
+    def claim_run(self, run_id: str) -> None:
+        """Mark a run as streaming. Unknown or already-streamed runs are refused."""
+        with Session(self.engine) as session:
+            run = session.get(Run, run_id)
+            if run is None:
+                raise RunNotFound(run_id)
+            if run.streamed:
+                raise RunAlreadyStreamed(f"run {run_id} was already processed")
+            run.streamed = True
+            session.add(run)
+            session.commit()
+
     def stream_run(self, run_id: str, carts: list[Cart] | None = None) -> Iterator[dict]:
-        """Run the pipeline and yield each saved card as soon as its cart finishes."""
+        """Run the pipeline and yield each saved card as soon as its cart finishes.
+
+        Call `claim_run` first: it is what stops a reconnect from running the LLMs again.
+        """
         pipeline = self.pipeline_factory(Telemetry(self.engine, run_id))
         for outcome in pipeline.run(carts or load_carts()):
             yield self._save(Card(run_id=run_id, cart_id=outcome.cart.cart_id), outcome)
+        self.telemetry_failures[run_id] = pipeline.telemetry.failures
 
     def cards(self, run_id: str) -> list[dict]:
         with Session(self.engine) as session:
@@ -295,7 +325,7 @@ class ReviewService:
         with Session(self.engine) as session:
             card = session.get(Card, card_id)
         if card is None:
-            raise KeyError(card_id)
+            raise CardNotFound(card_id)
         pipeline = self.pipeline_factory(Telemetry(self.engine, card.run_id))
         return card, CartOutcome.model_validate(card.outcome), pipeline
 
