@@ -6,7 +6,7 @@ One PR per row, in order. Design is in [[architecture]].
 |---|---|---|---|---|
 | 0 | `feature/harness` | Design docs, persona, Claude Code harness | Must | Done |
 | 1 | `feature/triage` | Dataset, `triage_rules.yaml`, Rules Engine, golden tests | Must | Done |
-| 2 | `feature/offer-agent` | `business_rules.yaml`, `models.yaml`, Groq client, Offer Strategist, offer guardrails with retry → NEEDS_ATTENTION, telemetry | Must | In progress |
+| 2 | `feature/offer-agent` | `business_rules.yaml`, `models.yaml`, Groq client, Offer Strategist, offer guardrails with retry → NEEDS_ATTENTION, telemetry | Must | Done |
 | 3 | `feature/copywriter` | Copywriter, copy guardrails, render, CLI end-to-end run (first full slice) | Must | |
 | 4 | `feature/api` | FastAPI: streamed run, marketer actions, Feedback Analyst | Must | |
 | 5 | `feature/ui` | Next.js: Start demo, queue, detail box, 4 actions (plain version) | Must | |

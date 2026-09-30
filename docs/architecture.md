@@ -114,7 +114,7 @@ Each value lives in exactly one file ([[decisions]] D-004).
 
 ## Offer Strategist
 
-- **Input:** static prefix (system prompt, offer catalogue) followed by one cart (cart facts, triage outcome, reason codes, segment, allowed options for that segment).
+- **Input:** static prefix (system prompt) followed by one cart (cart facts, triage result, policy caps, and a menu of allowed options already filtered by segment, discount range and $ cap). Each option shows its cost, illustrative conversion rate and `expected_value_usd`, computed in code ([[decisions]] D-027). The prompt is `prompts/offer_strategist.md`.
 - **Output:** strict JSON schema (Pydantic model), for example:
 
 ```json
@@ -139,7 +139,8 @@ All checks are deterministic, and each one returns a list of violations.
 - value within the allowed range
 - total cost within the $ cap
 - `reason` present, and `reason_codes_cited` is a non-empty subset of the cart's triage codes, so the reason is grounded in facts
-- warning (not a block) when the most expensive option was chosen although a cheaper one was allowed
+- warning (not a block) when the most expensive menu option was chosen although a cheaper one was allowed
+- a Groq outage or off-schema reply counts as a failed attempt (`LLM_UNAVAILABLE`, `BAD_JSON`), so it ends in NEEDS_ATTENTION, not a crash
 
 **Copy guardrails:**
 - placeholders ⊆ allowed set derived from the offer JSON

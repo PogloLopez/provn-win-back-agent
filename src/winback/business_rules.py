@@ -104,6 +104,9 @@ class BusinessRules(Strict):
                             "description": offer.description,
                             "cost_usd": cost,
                             "conversion_rate": lvl.conversion_rate,
+                            "expected_value_usd": round(
+                                lvl.conversion_rate * (cart.cart_value - cost), 2
+                            ),
                         }
                     )
         return options

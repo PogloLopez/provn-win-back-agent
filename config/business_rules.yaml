@@ -1,5 +1,6 @@
 # Business rules: what can be offered, to whom, and what it costs.
-# Conversion rates are ILLUSTRATIVE (invented for the demo; see README).
+# Conversion rates are ILLUSTRATIVE (invented for the demo; see README), with diminishing
+# returns so the deepest discount is not automatically the best option.
 # Cost of an offer, computed in code from its `unit`:
 #   percent -> value% of cart value      seats -> value x average seat price
 #   flag    -> fixed cost_usd
@@ -11,32 +12,32 @@ offers:
     description: Percentage off the whole cart
     unit: percent
     levels:
-      - {value: 5, conversion_rate: 0.08}
-      - {value: 10, conversion_rate: 0.12}
-      - {value: 15, conversion_rate: 0.15}
-      - {value: 20, conversion_rate: 0.18}
-      - {value: 30, conversion_rate: 0.22}
-      - {value: 40, conversion_rate: 0.24}  # exceptional cases; no segment allows it yet
+      - {value: 5, conversion_rate: 0.07}
+      - {value: 10, conversion_rate: 0.09}
+      - {value: 15, conversion_rate: 0.10}
+      - {value: 20, conversion_rate: 0.11}
+      - {value: 30, conversion_rate: 0.12}
+      - {value: 40, conversion_rate: 0.13}  # exceptional cases; no segment allows it yet
   free_parking:
     description: Free parking pass at Starfire on matchday
     unit: flag
     levels:
-      - {value: 1, cost_usd: 15, conversion_rate: 0.10}
+      - {value: 1, cost_usd: 15, conversion_rate: 0.09}
   extra_seat:
     description: Additional seat free of charge, next to the ones in the cart
     unit: seats
     levels:
-      - {value: 1, conversion_rate: 0.14}
+      - {value: 1, conversion_rate: 0.12}
   seat_upgrade:
     description: Upgrade to the next section up
     unit: flag
     levels:
-      - {value: 1, cost_usd: 25, conversion_rate: 0.13}
+      - {value: 1, cost_usd: 25, conversion_rate: 0.11}
   early_entry:
     description: Early stadium entry to watch warm-ups
     unit: flag
     levels:
-      - {value: 1, cost_usd: 0, conversion_rate: 0.06}
+      - {value: 1, cost_usd: 0, conversion_rate: 0.07}
 
 # Per segment (segment names come from triage_rules.yaml). Caps apply to the TOTAL of all offers.
 segments:

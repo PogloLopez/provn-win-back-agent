@@ -54,9 +54,10 @@ class LLMUsage:
 class LLMOutputError(Exception):
     """The model answered, but not in the requested schema."""
 
-    def __init__(self, message: str, usage: LLMUsage):
+    def __init__(self, message: str, usage: LLMUsage, raw: str = ""):
         super().__init__(message)
         self.usage = usage
+        self.raw = raw
 
 
 class ChatClient(Protocol):
@@ -106,7 +107,7 @@ class LLM:
         try:
             return schema.model_validate_json(raw), raw, usage
         except ValidationError as exc:
-            raise LLMOutputError(str(exc), usage) from exc
+            raise LLMOutputError(str(exc), usage, raw) from exc
 
     @retry(
         retry=retry_if_exception_type(TRANSIENT_ERRORS),
