@@ -172,5 +172,5 @@ def test_mid_stream_failure_after_a_card_keeps_the_card(api, monkeypatch):
     monkeypatch.setattr(harness_.service, "stream_run", half)
     run_id = client.post("/api/runs").json()["run_id"]
     events = sse_events(client.get(f"/api/runs/{run_id}/stream").text)
-    assert [kind for kind, _ in events] == ["card", "error"]
+    assert [kind for kind, _ in events] == ["card", "run_failed"]
     assert len(client.get(f"/api/runs/{run_id}/cards").json()) == 1

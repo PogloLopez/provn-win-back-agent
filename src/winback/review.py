@@ -311,13 +311,24 @@ class ReviewService:
         """Everything the edit form needs: allowed values and caps for this cart."""
         _, outcome, pipeline = self._load(card_id)
         policy = pipeline.rules.segments[outcome.triage.segment]
+        menu = pipeline.rules.menu(outcome.cart, outcome.triage)
+        base = (
+            placeholders.values(outcome.cart, outcome.offer.proposal, pipeline.rules)
+            if outcome.offer
+            else {}
+        )
+        # For the live preview: what each placeholder renders to, for any menu choice.
+        phrases: dict[str, dict[str, str]] = {}
+        for option in menu:
+            value = f"{option['value']:g}"
+            phrase = pipeline.rules.offers[option["type"]].phrase.format(value=value)
+            phrases.setdefault(option["type"], {})[value] = phrase
         return {
-            "menu": pipeline.rules.menu(outcome.cart, outcome.triage),
+            "menu": menu,
             "max_offers": policy.max_offers,
             "total_cost_cap_usd": pipeline.rules.cost_cap(outcome.triage),
-            "placeholders": sorted(
-                placeholders.allowed(outcome.offer.proposal) if outcome.offer else []
-            ),
+            "values": {k: base[k] for k in placeholders.BASE_PLACEHOLDERS if k in base},
+            "phrases": phrases,
         }
 
     # ---- helpers ----------------------------------------------------------------------------
