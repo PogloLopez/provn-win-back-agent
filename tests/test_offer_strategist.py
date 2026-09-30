@@ -7,9 +7,10 @@ from groq import APIConnectionError
 from tests.fakes import FakeChatClient, assert_groq_strict
 from winback.business_rules import load_business_rules
 from winback.carts import load_carts
+from winback.guarded import Status
 from winback.llm import LLM, load_models_config
 from winback.offer_models import Decision, OfferProposal
-from winback.offer_strategist import OfferStatus, build_request, propose_offer
+from winback.offer_strategist import build_request, propose_offer
 from winback.rules_engine import load_triage_rules, triage
 from winback.telemetry import Telemetry, make_engine
 
@@ -52,7 +53,7 @@ def test_request_contains_only_the_filtered_menu():
 
 def test_first_valid_proposal_is_accepted():
     result, client, telemetry = run([GOOD])
-    assert result.status is OfferStatus.OK
+    assert result.status is Status.OK
     assert result.proposal.offers[0].type == "early_entry"
     assert len(client.requests) == 1
     assert [(e.stage, e.status) for e in telemetry.events()] == [
@@ -63,7 +64,7 @@ def test_first_valid_proposal_is_accepted():
 
 def test_violation_is_fed_back_and_retried():
     result, client, telemetry = run([BAD, GOOD])
-    assert result.status is OfferStatus.OK
+    assert result.status is Status.OK
     assert len(result.attempts) == 2
     retry_prompt = client.requests[1]["messages"][-1]["content"]
     assert "DISCOUNT_OUT_OF_RANGE" in retry_prompt
@@ -73,7 +74,7 @@ def test_violation_is_fed_back_and_retried():
 
 def test_persistent_violations_escalate_with_safe_default():
     result, client, _ = run([BAD, BAD, "not json"])
-    assert result.status is OfferStatus.NEEDS_ATTENTION
+    assert result.status is Status.NEEDS_ATTENTION
     assert result.proposal.decision is Decision.REMINDER_ONLY
     assert result.proposal.offers == []
     assert len(client.requests) == CONFIG.guardrail_retries + 1
@@ -84,7 +85,7 @@ def test_groq_outage_escalates_instead_of_crashing(monkeypatch):
     monkeypatch.setattr("tenacity.nap.time.sleep", lambda _: None)
     down = APIConnectionError(request=httpx.Request("POST", "https://x"))
     result, _, telemetry = run([down] * 12)
-    assert result.status is OfferStatus.NEEDS_ATTENTION
+    assert result.status is Status.NEEDS_ATTENTION
     assert {e.status for e in telemetry.events()} == {"llm_unavailable", "needs_attention"}
 
 
@@ -98,4 +99,4 @@ def test_live_offer_passes_guardrails():
     telemetry = Telemetry(make_engine("sqlite://"))
     result = propose_offer(CART, TRIAGE, rules=RULES, llm=LLM(CONFIG), telemetry=telemetry)
     print(json.dumps(result.model_dump(mode="json"), indent=2))
-    assert result.status is OfferStatus.OK
+    assert result.status is Status.OK

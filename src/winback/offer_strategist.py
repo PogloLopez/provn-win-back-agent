@@ -1,15 +1,14 @@
 """Offer Strategist: LLM proposes Offer.json; guardrails check it; retry, then NEEDS_ATTENTION."""
 
 import json
-from enum import StrEnum
 
-import groq
 from pydantic import BaseModel
 
 from winback.business_rules import BusinessRules
 from winback.carts import Cart
-from winback.guardrails import Severity, Violation, blocking, check_offer
-from winback.llm import LLM, LLMOutputError
+from winback.guarded import Attempt, Status, guarded_call
+from winback.guardrails import Violation, check_offer
+from winback.llm import LLM
 from winback.offer_models import Decision, OfferProposal
 from winback.rules_engine import TriageResult
 from winback.settings import PROMPTS_DIR
@@ -19,22 +18,12 @@ ROLE = "offer_strategist"
 SYSTEM_PROMPT = (PROMPTS_DIR / "offer_strategist.md").read_text(encoding="utf-8")
 
 
-class OfferStatus(StrEnum):
-    OK = "ok"
-    NEEDS_ATTENTION = "needs_attention"
-
-
-class OfferAttempt(BaseModel):
-    raw: str
-    violations: list[Violation]
-
-
 class OfferResult(BaseModel):
     cart_id: str
-    status: OfferStatus
+    status: Status
     proposal: OfferProposal  # the accepted proposal, or the safe default when escalated
     warnings: list[Violation]
-    attempts: list[OfferAttempt]
+    attempts: list[Attempt]
 
 
 def build_request(cart: Cart, triage: TriageResult, rules: BusinessRules) -> dict:
@@ -84,72 +73,21 @@ def propose_offer(
     if feedback:
         messages.append({"role": "user", "content": f"Marketer feedback to address: {feedback}"})
 
-    attempts: list[OfferAttempt] = []
-    for attempt in range(1, llm.config.guardrail_retries + 2):
-        try:
-            proposal, raw, usage = llm.structured(ROLE, messages, OfferProposal)
-            violations = check_offer(proposal, cart, triage, rules)
-            telemetry.record(
-                Stage.OFFER,
-                "ok",
-                cart_id=cart.cart_id,
-                attempt=attempt,
-                payload=proposal.model_dump(),
-                **usage.telemetry_fields(),
-            )
-        except (LLMOutputError, groq.APIError) as exc:
-            # Off-schema reply, or Groq still failing after transient retries.
-            code = "BAD_JSON" if isinstance(exc, LLMOutputError) else "LLM_UNAVAILABLE"
-            proposal, raw = None, getattr(exc, "raw", "")
-            violations = [Violation(code=code, message=str(exc)[:300])]
-            usage = exc.usage.telemetry_fields() if isinstance(exc, LLMOutputError) else {}
-            telemetry.record(
-                Stage.OFFER,
-                code.lower(),
-                cart_id=cart.cart_id,
-                attempt=attempt,
-                reason_codes=[code],
-                **usage,
-            )
-
-        blockers = blocking(violations)
-        if proposal is not None:
-            telemetry.record(
-                Stage.OFFER_GUARDRAIL,
-                "fail" if blockers else "pass",
-                cart_id=cart.cart_id,
-                attempt=attempt,
-                reason_codes=[v.code for v in violations],
-            )
-        attempts.append(OfferAttempt(raw=raw, violations=violations))
-        if proposal is not None and not blockers:
-            return OfferResult(
-                cart_id=cart.cart_id,
-                status=OfferStatus.OK,
-                proposal=proposal,
-                warnings=[v for v in violations if v.severity is Severity.WARN],
-                attempts=attempts,
-            )
-        messages += [
-            {"role": "assistant", "content": raw or "(invalid output)"},
-            {
-                "role": "user",
-                "content": "Your proposal broke these rules. Fix them and answer again:\n"
-                + "\n".join(f"- {v.code}: {v.message}" for v in blockers),
-            },
-        ]
-
-    telemetry.record(
-        Stage.OFFER,
-        OfferStatus.NEEDS_ATTENTION,
+    outcome = guarded_call(
+        llm=llm,
+        role=ROLE,
+        messages=messages,
+        schema=OfferProposal,
+        check=lambda proposal: check_offer(proposal, cart, triage, rules),
+        telemetry=telemetry,
         cart_id=cart.cart_id,
-        attempt=len(attempts),
-        reason_codes=sorted({v.code for a in attempts for v in a.violations}),
+        llm_stage=Stage.OFFER,
+        guard_stage=Stage.OFFER_GUARDRAIL,
     )
     return OfferResult(
         cart_id=cart.cart_id,
-        status=OfferStatus.NEEDS_ATTENTION,
-        proposal=safe_default(cart, len(attempts)),
-        warnings=[],
-        attempts=attempts,
+        status=outcome.status,
+        proposal=outcome.value or safe_default(cart, len(outcome.attempts)),
+        warnings=outcome.warnings,
+        attempts=outcome.attempts,
     )
