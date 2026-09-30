@@ -147,7 +147,8 @@ All checks are deterministic, and each one returns a list of violations.
 - required placeholders present
 - no raw digits, `%` or `$` outside placeholders
 - no `banned_terms` from the persona and no emojis
-- no scarcity or deadline claims
+- no scarcity or deadline claims (`scarcity_terms` in the persona)
+- no mention of an offer that was not granted (each offer's `keywords` in the business rules), which catches an email promising "free parking" in plain words
 
 **Failure policy:**
 1. Re-prompt with the violations, up to 2 retries.
@@ -155,9 +156,11 @@ All checks are deterministic, and each one returns a list of violations.
 
 ## Copywriter and rendering
 
-- **Input:** offer JSON, cart facts, contact stage, and the persona from `prompts/seattle_seawolves_persona.json` in the cached system prompt.
-- **Output:** strict JSON with `subject` and `body`. Every value (discount, perk, seat count) is a `{{placeholder}}`, so the model cannot write a wrong number.
-- **Rendering:** Jinja2 fills the placeholders from the offer JSON after the copy guardrails pass.
+- **Input:** offer JSON, section, contact-stage tone, the CAUTION flag, and each allowed placeholder with the exact text it renders to (so sentences read naturally around it). The persona is in the cached system prompt (`prompts/copywriter.md`).
+- **Placeholders:** `{{section}}`, `{{seats}}` ("1 seat" or "2 seats"), `{{checkout_link}}` (required) and one per granted offer (required), named after the offer type and rendered from its `phrase` in the business rules.
+- **Output:** strict JSON with `subject` and `body`. Every value is a placeholder, so the model cannot write a wrong number.
+- **Rendering:** Jinja2 with `StrictUndefined` fills the placeholders after the copy guardrails pass.
+- **On escalation:** a plain, always-valid template draft is used, so the marketer still has an email to edit ([[decisions]] D-028).
 
 ## Marketer UI and feedback loop
 
