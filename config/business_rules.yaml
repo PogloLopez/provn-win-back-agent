@@ -1,0 +1,71 @@
+# Business rules: what can be offered, to whom, and what it costs.
+# Conversion rates are ILLUSTRATIVE (invented for the demo; see README).
+# Cost of an offer, computed in code from its `unit`:
+#   percent -> value% of cart value      seats -> value x average seat price
+#   flag    -> fixed cost_usd
+
+reminder_conversion_rate: 0.05  # a plain reminder with no incentive
+
+offers:
+  discount_pct:
+    description: Percentage off the whole cart
+    unit: percent
+    levels:
+      - {value: 5, conversion_rate: 0.08}
+      - {value: 10, conversion_rate: 0.12}
+      - {value: 15, conversion_rate: 0.15}
+      - {value: 20, conversion_rate: 0.18}
+      - {value: 30, conversion_rate: 0.22}
+      - {value: 40, conversion_rate: 0.24}  # exceptional cases; no segment allows it yet
+  free_parking:
+    description: Free parking pass at Starfire on matchday
+    unit: flag
+    levels:
+      - {value: 1, cost_usd: 15, conversion_rate: 0.10}
+  extra_seat:
+    description: Additional seat free of charge, next to the ones in the cart
+    unit: seats
+    levels:
+      - {value: 1, conversion_rate: 0.14}
+  seat_upgrade:
+    description: Upgrade to the next section up
+    unit: flag
+    levels:
+      - {value: 1, cost_usd: 25, conversion_rate: 0.13}
+  early_entry:
+    description: Early stadium entry to watch warm-ups
+    unit: flag
+    levels:
+      - {value: 1, cost_usd: 0, conversion_rate: 0.06}
+
+# Per segment (segment names come from triage_rules.yaml). Caps apply to the TOTAL of all offers.
+segments:
+  premium:
+    allowed: [discount_pct, seat_upgrade, free_parking, early_entry]
+    min_discount_pct: 15
+    max_discount_pct: 30
+    max_offer_cost_usd: 120
+    max_offers: 2
+  loyal:
+    allowed: [discount_pct, free_parking, early_entry]
+    max_discount_pct: 15
+    max_offer_cost_usd: 30
+    max_offers: 2
+  first_timer:
+    allowed: [discount_pct, extra_seat, free_parking]
+    max_discount_pct: 15
+    max_offer_cost_usd: 40
+    max_offers: 1
+  lapsed:
+    allowed: [discount_pct, free_parking]
+    max_discount_pct: 10
+    max_offer_cost_usd: 15
+    max_offers: 1
+  regular:
+    allowed: [free_parking, early_entry]
+    max_discount_pct: 0
+    max_offer_cost_usd: 15
+    max_offers: 1
+
+# CAUTION carts: the tighter of this cap and the segment cap applies.
+caution_max_offer_cost_usd: 10
