@@ -4,7 +4,8 @@
 # Cost of an offer, computed in code from its `unit`:
 #   percent -> value% of cart value      seats -> value x average seat price
 #   flag    -> fixed cost_usd
-# `phrase` is what {{<offer type>}} renders to in the email ({value} is the level).
+# `phrase` is what {{<offer type>}} renders to in the email ({value} is the level). No leading
+# article: the Copywriter writes around it ("we added {{free_parking}}").
 # `keywords` may appear in an email only when that offer was granted.
 
 reminder_conversion_rate: 0.05  # a plain reminder with no incentive
@@ -24,21 +25,21 @@ offers:
       - {value: 40, conversion_rate: 0.13}  # exceptional cases; no segment allows it yet
   free_parking:
     description: Free parking pass at Starfire on matchday
-    phrase: a free parking pass for matchday
+    phrase: free matchday parking
     keywords: [parking]
     unit: flag
     levels:
       - {value: 1, cost_usd: 15, conversion_rate: 0.09}
   extra_seat:
     description: Additional seat free of charge, next to the ones in the cart
-    phrase: "{value} extra seat on us"
+    phrase: free extra seat next to yours
     keywords: [extra seat, free seat, additional seat, bring a friend]
     unit: seats
     levels:
       - {value: 1, conversion_rate: 0.12}
   seat_upgrade:
     description: Upgrade to the next section up
-    phrase: a free upgrade to the next section up
+    phrase: free upgrade to the next section up
     keywords: [upgrade]
     unit: flag
     levels:

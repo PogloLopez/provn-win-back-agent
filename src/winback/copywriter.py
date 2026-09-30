@@ -70,7 +70,7 @@ def fallback_draft(proposal: OfferProposal) -> EmailDraft:
     return EmailDraft(
         subject="Your Seawolves seats are still waiting",
         body=(
-            "Hi there,\n\nYour {{seats}} in {{section}} are still holding the line."
+            "Hi there,\n\nYour {{seats}} in the {{section}} are still holding the line."
             f"{perks}\n\nFinish your order here: {{{{checkout_link}}}}\n\n"
             "Together We Hunt,\nSeattle Seawolves"
         ),
@@ -101,7 +101,9 @@ def write_copy(
         role=ROLE,
         messages=messages,
         schema=EmailDraft,
-        check=lambda draft: check_copy(draft, proposal, persona, rules),
+        check=lambda draft: check_copy(
+            draft, proposal, persona, rules, placeholders.values(cart, proposal, rules)
+        ),
         telemetry=telemetry,
         cart_id=cart.cart_id,
         llm_stage=Stage.COPY,

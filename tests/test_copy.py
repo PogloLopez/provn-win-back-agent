@@ -169,3 +169,35 @@ def test_marketer_feedback_reaches_the_copywriter():
         feedback="warmer, less salesy",
     )
     assert "warmer, less salesy" in client.requests[0]["messages"][-1]["content"]
+
+
+@pytest.mark.parametrize(
+    ("sentence", "code"),
+    [
+        ("We added {{discount_pct}} for you.", None),
+        ("Your {{seats}} are waiting.", None),
+        ("We had had enough of that that.", None),  # normal English away from placeholders
+        ("We added a {{discount_pct}} for you.", "WORD_BEFORE_NUMBER"),
+        ("Grab a couple of {{seats}} today.", "WORD_BEFORE_NUMBER"),
+        ("Your {{seats}} seats are waiting.", "DOUBLED_WORD"),
+        ("Come to the {{section}} section.", None),
+        ("Enjoy Lower {{section}}.", "DOUBLED_WORD"),
+    ],
+)
+def test_rendered_seams_are_checked(sentence, code):
+    values = placeholders.values(CART, PROPOSAL, RULES)
+    draft = EmailDraft(**(GOOD | {"body": GOOD["body"] + " " + sentence}))
+    found = {v.code for v in check_copy(draft, PROPOSAL, PERSONA, RULES, values)}
+    seams = found & {"DOUBLED_WORD", "WORD_BEFORE_NUMBER"}
+    assert seams == ({code} if code else set())
+
+
+def test_word_doubled_by_a_phrase_is_caught():
+    parking = OfferProposal.model_validate(
+        PROPOSAL.model_dump() | {"offers": [{"type": "free_parking", "value": 1}]}
+    )
+    values = placeholders.values(CART, parking, RULES)
+    body = "Hi there, enjoy free {{free_parking}} on us. {{checkout_link}}"
+    draft = EmailDraft(subject="Seats waiting", body=body)
+    codes = {v.code for v in check_copy(draft, parking, PERSONA, RULES, values)}
+    assert "DOUBLED_WORD" in codes
