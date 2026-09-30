@@ -13,4 +13,4 @@ One PR per row, in order. Design is in [[architecture]].
 | 6 | `feature/eval` | Baseline run and comparison report | Must | Done |
 | 7 | `feature/deploy` | Deploy ([[decisions]] D-022) | Should | Done |
 | 8 | `feature/polish` | Trash animation, edit chips, disabled platform shell | Could | Done (with the UI) |
-| 9 | `docs/submission` | README sections A–C, video outline | Must | |
+| 9 | `docs/submission` | README sections A–C, [[video_outline]] | Must | Done |
